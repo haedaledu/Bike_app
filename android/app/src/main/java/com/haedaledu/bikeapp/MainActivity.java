@@ -6,6 +6,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -13,13 +14,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.OnBackPressedCallback;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
@@ -34,11 +41,16 @@ import java.util.Locale;
 import java.util.Set;
 
 public class MainActivity extends ComponentActivity {
-    private static final int GREEN = Color.rgb(25, 135, 84);
-    private static final int TEXT = Color.rgb(24, 32, 28);
-    private static final int MUTED = Color.rgb(94, 105, 98);
-    private static final int BORDER = Color.rgb(222, 226, 222);
-    private static final int BACKGROUND = Color.rgb(247, 248, 246);
+    private static final int GREEN = Color.rgb(24, 113, 83);
+    private static final int TEXT = Color.rgb(27, 48, 40);
+    private static final int MUTED = Color.rgb(100, 120, 110);
+    private static final int BORDER = Color.rgb(224, 234, 227);
+    private static final int BACKGROUND = Color.rgb(245, 248, 244);
+    private static final int MINT = Color.rgb(229, 243, 232);
+    private static final int BLUE = Color.rgb(54, 103, 144);
+    private static final int PALE_BLUE = Color.rgb(232, 242, 249);
+    private static final int AMBER = Color.rgb(140, 91, 31);
+    private static final int PALE_AMBER = Color.rgb(251, 242, 225);
     private static final int WHITE = Color.WHITE;
     private static final String PREFERENCES = "bike-maintenance";
 
@@ -99,6 +111,7 @@ public class MainActivity extends ComponentActivity {
     private String selectedSituationId;
     private LinearLayout content;
     private TextView progressText;
+    private ProgressBar progressBar;
     private Screen currentScreen = Screen.HOME;
 
     @Override
@@ -171,30 +184,68 @@ public class MainActivity extends ComponentActivity {
 
     private void render() {
         currentScreen = screenStack.peekLast() == null ? Screen.HOME : screenStack.peekLast();
+        progressText = null;
+        progressBar = null;
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(BACKGROUND);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, windowInsets) -> {
+            Insets insets = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom);
+            return windowInsets;
+        });
 
         LinearLayout toolbar = new LinearLayout(this);
         toolbar.setGravity(Gravity.CENTER_VERTICAL);
-        toolbar.setPadding(dp(20), dp(12), dp(20), dp(12));
+        toolbar.setPadding(dp(20), dp(8), dp(20), dp(8));
         if (currentScreen != Screen.HOME) {
-            TextView back = text("‹", 34, TEXT, false);
-            back.setGravity(Gravity.CENTER);
+            ImageView back = icon(R.drawable.ic_back, TEXT);
+            back.setPadding(dp(12), dp(12), dp(12), dp(12));
+            back.setBackground(ripple(WHITE, BORDER, 16));
             back.setContentDescription("뒤로");
-            toolbar.addView(back, new LinearLayout.LayoutParams(dp(42), dp(44)));
+            back.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+            LinearLayout.LayoutParams backParams = new LinearLayout.LayoutParams(dp(48), dp(48));
+            backParams.rightMargin = dp(12);
+            toolbar.addView(back, backParams);
             back.setOnClickListener(view -> navigateBack());
+        } else {
+            ImageView brand = icon(R.drawable.ic_launcher_foreground, WHITE);
+            brand.setBackground(rounded(GREEN, GREEN, 14));
+            LinearLayout.LayoutParams brandParams = new LinearLayout.LayoutParams(dp(42), dp(42));
+            brandParams.rightMargin = dp(12);
+            toolbar.addView(brand, brandParams);
         }
-        TextView title = text(currentScreen == Screen.HOME ? "자전거 관리법" : screenTitle(), 18, TEXT, true);
+        TextView title = text(currentScreen == Screen.HOME ? "자전거 관리법" : screenTitle(), 17, TEXT, true);
         toolbar.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+        if (currentScreen == Screen.HOME) {
+            TextView badge = text("BIKE CARE", 10, GREEN, true);
+            badge.setLetterSpacing(0.08f);
+            toolbar.addView(badge, new LinearLayout.LayoutParams(-2, -2));
+        }
         root.addView(toolbar, new LinearLayout.LayoutParams(-1, -2));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
+        scroll.setClipToPadding(false);
+        scroll.setVerticalScrollBarEnabled(false);
+        FrameLayout contentContainer = new FrameLayout(this);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(20), dp(12), dp(20), dp(36));
-        scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
+        int width = Math.min(getResources().getConfiguration().screenWidthDp, 640);
+        contentContainer.addView(content,
+                new FrameLayout.LayoutParams(dp(width), -2, Gravity.CENTER_HORIZONTAL));
+        scroll.addView(contentContainer, new ScrollView.LayoutParams(-1, -2));
+        LinearLayout screenContent = content;
+        scroll.addOnLayoutChangeListener((view, left, top, right, bottom,
+                oldLeft, oldTop, oldRight, oldBottom) -> {
+            int availableWidth = Math.min(right - left, dp(640));
+            if (screenContent.getLayoutParams().width != availableWidth) {
+                screenContent.getLayoutParams().width = availableWidth;
+                screenContent.requestLayout();
+            }
+        });
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
         setContentView(root);
 
@@ -229,53 +280,88 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void renderHome() {
-        addSpace(22);
-        addText("안전하고 즐거운 라이딩을 위한", 16, MUTED, false);
-        addText("자전거 관리법", 30, TEXT, true, 4);
-        addText("간단한 점검으로 자전거를 오래, 안전하게 관리하세요.", 16, MUTED, false, 10);
-        addSpace(24);
-        addActionButton("날짜별 관리 일정", "점검 항목을 확인하고 완료 상태를 기록해요",
-                () -> navigateTo(Screen.SCHEDULE));
-        addActionButton("상황별 자전거 관리법", "비를 맞았거나 넘어졌을 때 필요한 점검을 확인해요",
-                () -> navigateTo(Screen.SITUATIONS));
-        addSpace(12);
-        addText("체크 기록은 이 기기에 저장됩니다.", 13, MUTED, false);
+        LinearLayout hero = card();
+        hero.setPadding(dp(24), dp(24), dp(24), dp(20));
+        GradientDrawable gradient = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(20, 77, 59), GREEN});
+        gradient.setCornerRadius(dp(24));
+        hero.setBackground(gradient);
+        TextView eyebrow = text("매일의 작은 점검, 더 즐거운 라이딩", 12, Color.rgb(199, 227, 207), false);
+        hero.addView(eyebrow, matchWrap(-2));
+        TextView heading = text("오늘도 가볍게,\n안전하게 달려요.", 29, WHITE, true);
+        LinearLayout.LayoutParams headingParams = matchWrap(-2);
+        headingParams.topMargin = dp(12);
+        hero.addView(heading, headingParams);
+        ImageView bicycle = icon(R.drawable.ic_launcher_foreground, Color.rgb(203, 234, 186));
+        bicycle.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        hero.addView(bicycle, matchWrap(108));
+        TextView heroNote = text("좋은 라이딩은 작은 관리에서 시작돼요.", 13, WHITE, false);
+        hero.addView(heroNote, matchWrap(-2));
+        addCardToContent(hero);
+        addText("나의 자전거 관리", 20, TEXT, true, 12);
+        addText("필요한 관리 방법을 선택해 주세요.", 14, MUTED, false, 4);
+        addSpace(16);
+        addActionButton("날짜별 관리 일정", "8가지 점검을 기록하고 관리해요",
+                R.drawable.ic_calendar, GREEN, MINT, () -> navigateTo(Screen.SCHEDULE));
+        addActionButton("상황별 자전거 관리법", "라이딩 전후, 상황에 맞는 관리 가이드",
+                R.drawable.ic_shield, BLUE, PALE_BLUE, () -> navigateTo(Screen.SITUATIONS));
+        addSpace(6);
+        TextView footer = text("내 기기에 안전하게 저장 · 오프라인 사용", 12, MUTED, false);
+        footer.setGravity(Gravity.CENTER);
+        content.addView(footer, matchWrap(-2));
     }
 
     private void renderSchedule() {
-        addText("오늘의 점검", 26, TEXT, true);
-        addText("날짜별로 완료한 관리 항목을 기록할 수 있어요.", 15, MUTED, false, 6);
-        addSpace(18);
+        addText("한 번의 점검,\n더 안심되는 라이딩.", 27, TEXT, true);
+        addText("완료한 항목을 체크해 나만의 관리 기록을 남겨요.", 14, MUTED, false, 8);
+        addSpace(20);
 
         Button dateButton = outlineButton(displayDate());
-        content.addView(dateButton, matchWrap(48));
+        dateButton.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_calendar, 0, 0, 0);
+        dateButton.setCompoundDrawablePadding(dp(12));
+        dateButton.setPadding(dp(18), dp(12), dp(18), dp(12));
+        dateButton.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+        content.addView(dateButton, matchWrap(-2));
         dateButton.setOnClickListener(view -> showDatePicker());
 
-        Button resetButton = outlineButton("이 날짜 기록 초기화");
-        LinearLayout.LayoutParams resetParams = matchWrap(46);
-        resetParams.topMargin = dp(10);
-        content.addView(resetButton, resetParams);
-        resetButton.setOnClickListener(view -> confirmReset());
-
-        progressText = text("", 15, GREEN, true);
+        addSpace(14);
+        LinearLayout progressCard = card();
+        progressCard.setBackground(rounded(MINT, MINT, 20));
+        progressCard.addView(text("차근차근, 오늘의 관리", 13, GREEN, true), matchWrap(-2));
+        progressText = text("", 23, TEXT, true);
         LinearLayout.LayoutParams progressParams = matchWrap(-2);
-        progressParams.topMargin = dp(20);
-        progressParams.bottomMargin = dp(8);
-        content.addView(progressText, progressParams);
+        progressParams.topMargin = dp(8);
+        progressCard.addView(progressText, progressParams);
+        progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progressBar.setMax(MAINTENANCE_ITEMS.size());
+        progressBar.setProgressTintList(ColorStateList.valueOf(GREEN));
+        progressBar.setProgressBackgroundTintList(ColorStateList.valueOf(Color.rgb(201, 223, 206)));
+        LinearLayout.LayoutParams barParams = matchWrap(8);
+        barParams.topMargin = dp(12);
+        progressCard.addView(progressBar, barParams);
+        addCardToContent(progressCard);
+        addText("관리 체크리스트", 18, TEXT, true, 10);
+        addSpace(12);
 
         String storageKey = PREFERENCES + ":" + dateKey();
         for (int i = 0; i < MAINTENANCE_ITEMS.size(); i++) {
             addChecklistItem(MAINTENANCE_ITEMS.get(i), i, storageKey);
         }
         updateProgress();
+        Button resetButton = outlineButton("이 날짜 기록 초기화");
+        resetButton.setTextColor(MUTED);
+        content.addView(resetButton, matchWrap(-2));
+        resetButton.setOnClickListener(view -> confirmReset());
     }
 
     private void renderSituations() {
-        addText("어떤 상황인가요?", 26, TEXT, true);
-        addText("상황에 맞는 점검 방법을 확인해 보세요.", 15, MUTED, false, 6);
-        addSpace(18);
+        addText("지금, 어떤 상황인가요?", 26, TEXT, true);
+        addText("상황에 꼭 맞는 관리 방법을 모았어요.", 14, MUTED, false, 8);
+        addSpace(24);
         for (Situation situation : SITUATIONS) {
-            addActionButton(situation.title, "필요한 점검 항목 보기", () -> {
+            addActionButton(situation.title, situationDescription(situation.id),
+                    situationIcon(situation.id), situationColor(situation.id),
+                    situationBackground(situation.id), () -> {
                 selectedSituationId = situation.id;
                 navigateTo(Screen.GUIDE);
             });
@@ -289,15 +375,34 @@ public class MainActivity extends ComponentActivity {
             render();
             return;
         }
-        addText(situation.title, 26, TEXT, true);
-        addText("아래 항목을 차례대로 확인해 주세요.", 15, MUTED, false, 6);
-        addSpace(18);
-        for (CareItem item : situation.items) {
-            addGuideItem(item);
+        LinearLayout summary = card();
+        summary.setBackground(rounded(situationBackground(situation.id),
+                situationBackground(situation.id), 22));
+        ImageView symbol = icon(situationIcon(situation.id), situationColor(situation.id));
+        summary.addView(symbol, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        TextView heading = text(situation.title, 24, TEXT, true);
+        LinearLayout.LayoutParams headingParams = matchWrap(-2);
+        headingParams.topMargin = dp(14);
+        summary.addView(heading, headingParams);
+        TextView subtitle = text("4가지 점검으로 꼼꼼하게 관리해요.", 14, MUTED, false);
+        LinearLayout.LayoutParams subtitleParams = matchWrap(-2);
+        subtitleParams.topMargin = dp(6);
+        summary.addView(subtitle, subtitleParams);
+        addCardToContent(summary);
+        addText("이렇게 관리해 주세요", 18, TEXT, true, 12);
+        addSpace(14);
+        for (int i = 0; i < situation.items.size(); i++) {
+            addGuideItem(situation.items.get(i), i + 1);
         }
-        addSpace(12);
-        addText("손상이나 이상이 발견되면 안전을 위해 정비 전문가에게 점검을 받으세요.",
-                14, MUTED, false);
+        LinearLayout safety = card();
+        safety.setBackground(rounded(PALE_AMBER, PALE_AMBER, 18));
+        safety.addView(text("안전이 가장 중요해요", 15, AMBER, true), matchWrap(-2));
+        TextView warning = text("손상이나 이상이 발견되면 라이딩을 멈추고 정비 전문가에게 점검을 받으세요.",
+                14, AMBER, false);
+        LinearLayout.LayoutParams warningParams = matchWrap(-2);
+        warningParams.topMargin = dp(6);
+        safety.addView(warning, warningParams);
+        addCardToContent(safety);
     }
 
     private void addChecklistItem(CareItem item, int index, String storageKey) {
@@ -305,19 +410,24 @@ public class MainActivity extends ComponentActivity {
         CheckBox checkbox = new CheckBox(this);
         checkbox.setText(item.title);
         checkbox.setTextColor(TEXT);
-        checkbox.setTextSize(17);
+        checkbox.setTextSize(16);
         checkbox.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         checkbox.setButtonTintList(new ColorStateList(
                 new int[][]{new int[]{android.R.attr.state_checked}, new int[]{}},
                 new int[]{GREEN, MUTED}));
-        checkbox.setPadding(0, 0, 0, dp(4));
+        checkbox.setPadding(0, 0, 0, 0);
+        checkbox.setMinHeight(dp(48));
+        checkbox.setBackground(ripple(Color.TRANSPARENT, Color.TRANSPARENT, 12));
 
         Set<String> completed = getPreferences(MODE_PRIVATE).getStringSet(storageKey, Collections.emptySet());
         checkbox.setChecked(completed.contains(String.valueOf(index)));
+        card.setBackground(rounded(checkbox.isChecked() ? MINT : WHITE,
+                checkbox.isChecked() ? MINT : BORDER, 20));
         card.addView(checkbox, matchWrap(-2));
         TextView description = text(item.description, 14, MUTED, false);
         LinearLayout.LayoutParams descriptionParams = matchWrap(-2);
-        descriptionParams.leftMargin = dp(38);
+        descriptionParams.leftMargin = dp(34);
+        descriptionParams.topMargin = dp(2);
         card.addView(description, descriptionParams);
         addCardToContent(card);
 
@@ -330,30 +440,68 @@ public class MainActivity extends ComponentActivity {
                 updated.remove(String.valueOf(index));
             }
             getPreferences(MODE_PRIVATE).edit().putStringSet(storageKey, updated).apply();
+            card.setBackground(rounded(checked ? MINT : WHITE, checked ? MINT : BORDER, 20));
             updateProgress();
         });
     }
 
-    private void addGuideItem(CareItem item) {
+    private void addGuideItem(CareItem item, int step) {
         LinearLayout card = card();
-        card.addView(text(item.title, 17, TEXT, true), matchWrap(-2));
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        TextView number = text(String.format(Locale.getDefault(), "%02d", step), 13, GREEN, true);
+        number.setGravity(Gravity.CENTER);
+        number.setBackground(rounded(MINT, MINT, 12));
+        LinearLayout.LayoutParams numberParams = new LinearLayout.LayoutParams(dp(36), dp(36));
+        numberParams.rightMargin = dp(12);
+        row.addView(number, numberParams);
+        row.addView(text(item.title, 16, TEXT, true), new LinearLayout.LayoutParams(0, -2, 1));
+        card.addView(row, matchWrap(-2));
         TextView description = text(item.description, 15, MUTED, false);
         LinearLayout.LayoutParams descriptionParams = matchWrap(-2);
-        descriptionParams.topMargin = dp(8);
+        descriptionParams.topMargin = dp(12);
         card.addView(description, descriptionParams);
         addCardToContent(card);
     }
 
-    private void addActionButton(String label, String description, Runnable action) {
-        Button button = new Button(this);
-        button.setAllCaps(false);
-        button.setText(getString(R.string.action_with_description, label, description));
-        button.setTextColor(WHITE);
-        button.setTextSize(16);
-        button.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
-        button.setPadding(dp(18), dp(12), dp(18), dp(12));
-        button.setMinHeight(dp(74));
-        button.setBackground(rounded(GREEN, GREEN, 10));
+    private void addActionButton(String label, String description, int iconResource,
+                                 int accent, int iconBackground, Runnable action) {
+        LinearLayout button = new LinearLayout(this);
+        button.setGravity(Gravity.CENTER_VERTICAL);
+        button.setPadding(dp(16), dp(20), dp(16), dp(20));
+        button.setMinimumHeight(dp(96));
+        button.setBackground(ripple(WHITE, BORDER, 20));
+        button.setElevation(dp(1));
+        button.setFocusable(true);
+        button.setContentDescription(getString(R.string.action_with_description, label, description));
+        ViewCompat.setAccessibilityDelegate(button, new androidx.core.view.AccessibilityDelegateCompat() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host,
+                    androidx.core.view.accessibility.AccessibilityNodeInfoCompat info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.setClassName(Button.class.getName());
+            }
+        });
+        ImageView symbol = icon(iconResource, accent);
+        symbol.setPadding(dp(12), dp(12), dp(12), dp(12));
+        symbol.setBackground(rounded(iconBackground, iconBackground, 16));
+        button.addView(symbol, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        labels.addView(text(label, 16, TEXT, true), matchWrap(-2));
+        TextView detail = text(description, 13, MUTED, false);
+        LinearLayout.LayoutParams detailParams = matchWrap(-2);
+        detailParams.topMargin = dp(6);
+        labels.addView(detail, detailParams);
+        LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(0, -2, 1);
+        labelParams.leftMargin = dp(14);
+        labelParams.rightMargin = dp(8);
+        button.addView(labels, labelParams);
+        button.addView(icon(R.drawable.ic_chevron, MUTED),
+                new LinearLayout.LayoutParams(dp(18), dp(18)));
+        for (int i = 0; i < button.getChildCount(); i++) {
+            button.getChildAt(i).setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        }
         button.setOnClickListener(view -> action.run());
         LinearLayout.LayoutParams params = matchWrap(-2);
         params.bottomMargin = dp(12);
@@ -367,15 +515,17 @@ public class MainActivity extends ComponentActivity {
         button.setTextColor(TEXT);
         button.setTextSize(15);
         button.setGravity(Gravity.CENTER);
-        button.setBackground(rounded(WHITE, BORDER, 8));
+        button.setMinHeight(dp(52));
+        button.setPadding(dp(16), dp(12), dp(16), dp(12));
+        button.setBackground(ripple(WHITE, BORDER, 16));
         return button;
     }
 
     private LinearLayout card() {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(16), dp(14), dp(16), dp(14));
-        card.setBackground(rounded(WHITE, BORDER, 8));
+        card.setPadding(dp(18), dp(18), dp(18), dp(18));
+        card.setBackground(rounded(WHITE, BORDER, 20));
         return card;
     }
 
@@ -401,9 +551,10 @@ public class MainActivity extends ComponentActivity {
         view.setText(value);
         view.setTextSize(size);
         view.setTextColor(color);
-        view.setLineSpacing(dp(2), 1f);
+        view.setIncludeFontPadding(false);
+        view.setLineSpacing(dp(3), 1.12f);
         if (bold) {
-            view.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+            view.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         }
         return view;
     }
@@ -425,6 +576,37 @@ public class MainActivity extends ComponentActivity {
             drawable.setStroke(dp(1), strokeColor);
         }
         return drawable;
+    }
+
+    private RippleDrawable ripple(int fillColor, int strokeColor, int radius) {
+        return new RippleDrawable(ColorStateList.valueOf(Color.argb(25, 24, 113, 83)),
+                rounded(fillColor, strokeColor, radius), rounded(WHITE, WHITE, radius));
+    }
+
+    private ImageView icon(int resource, int tint) {
+        ImageView image = new ImageView(this);
+        image.setImageResource(resource);
+        image.setImageTintList(ColorStateList.valueOf(tint));
+        image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        return image;
+    }
+
+    private int situationIcon(String id) {
+        return "rain".equals(id) ? R.drawable.ic_rain
+                : "fall".equals(id) ? R.drawable.ic_shield : R.drawable.ic_sun;
+    }
+
+    private int situationColor(String id) {
+        return "rain".equals(id) ? BLUE : "fall".equals(id) ? AMBER : GREEN;
+    }
+
+    private int situationBackground(String id) {
+        return "rain".equals(id) ? PALE_BLUE : "fall".equals(id) ? PALE_AMBER : MINT;
+    }
+
+    private String situationDescription(String id) {
+        return "rain".equals(id) ? "물기 제거부터 체인 관리까지"
+                : "fall".equals(id) ? "충격을 받은 부위를 꼼꼼하게 점검해요" : "출발 전, 안전을 위한 4가지 점검";
     }
 
     private int dp(float value) {
@@ -479,6 +661,7 @@ public class MainActivity extends ComponentActivity {
                 .getStringSet(PREFERENCES + ":" + dateKey(), Collections.emptySet());
         progressText.setText(getString(
                 R.string.checklist_progress, completed.size(), MAINTENANCE_ITEMS.size()));
+        progressBar.setProgress(completed.size());
     }
 
     private Situation selectedSituation() {
