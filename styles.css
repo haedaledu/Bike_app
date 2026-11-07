@@ -88,6 +88,7 @@ h1 {
 .primary-button:focus-visible,
 .brand-button:focus-visible,
 .back-button:focus-visible,
+.reset-button:focus-visible,
 input:focus-visible {
   outline: 3px solid #000;
   outline-offset: 3px;
@@ -106,6 +107,22 @@ input[type="date"] {
   border-radius: 6px;
   background: #fff;
   color: #000;
+}
+
+.reset-button {
+  display: block;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #777;
+  border-radius: 6px;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+}
+
+.reset-button:hover {
+  background: #f2f2f2;
 }
 
 .checklist,
