@@ -1,23 +1,26 @@
+import { App } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
+
 const maintenanceItems = [
   {
     title: "체인 청소 및 오일 도포",
-    description: "오염 물질을 닦아내고 자전거 전용 루브(오일)를 도포한 뒤 겉면 남은 기름을 닦아내기",
+    description: "오염 물질을 닦아내고 자전거 전용 오일을 바른 뒤, 체인 겉면에 남은 기름을 닦아냅니다.",
   },
   {
     title: "타이어 공기압 점검",
-    description: "주행 전 지정된 수치(PSI/BAR)에 맞게 공기 채우기 및 마모·크랙 상태 확인",
+    description: "주행 전 타이어에 표시된 권장 공기압(PSI/BAR)을 확인하고 마모나 갈라짐이 없는지 살핍니다.",
   },
   {
     title: "브레이크 패드 및 장력 점검",
-    description: "패드 마모도 확인, 브레이크 레버 감도 및 와이어/유압 성능 체크",
+    description: "패드 마모 상태와 브레이크 레버 감도를 확인하고 와이어 또는 유압 브레이크가 정상적으로 작동하는지 점검합니다.",
   },
   {
     title: "변속기(드레일러) 세팅 점검",
-    description: "변속 시 체인 튀임이나 잡음이 없는지 확인하고 와이어 장력 조절",
+    description: "변속할 때 체인이 튀거나 소음이 나지 않는지 확인하고, 필요한 경우 변속 케이블 장력을 조절합니다.",
   },
   {
-    title: "구동계(체인 ring, 스프라켓) 이물질 제거",
-    description: "톱니 사이에 낀 흙 dust, 이물질 cleaning",
+    title: "구동계(체인링·스프라켓) 이물질 제거",
+    description: "체인링과 스프라켓 톱니 사이에 낀 흙이나 이물질을 제거합니다.",
   },
   {
     title: "볼트 결합 상태 점검",
@@ -47,11 +50,11 @@ const situations = {
       },
       {
         title: "체인 오일 재도포",
-        description: "빗물에 씻겨 내려간 루브를 대신해 체인마디마다 자전거 전용 오일을 도포하고, 겉면에 남은 excess 오일은 가볍게 닦아냅니다.",
+        description: "빗물에 씻겨 내려간 오일을 보충하도록 체인 마디마다 자전거 전용 오일을 바르고, 겉면에 남은 기름은 가볍게 닦아냅니다.",
       },
       {
         title: "베어링 부위 건조 및 점검",
-        description: "헤드셋, BB(크랭크 축), 휠 허브 등 베어링이 들어간 유입 부위에 물기가 고여 있지 않은지 확인하고 바람이 잘 통하는 그늘에서 바짝 말려줍니다.",
+        description: "헤드셋, BB(크랭크 축), 휠 허브 등 베어링 주변에 물기가 고이지 않았는지 확인하고, 바람이 잘 통하는 그늘에서 충분히 말립니다.",
       },
     ],
   },
@@ -104,9 +107,11 @@ const screens = document.querySelectorAll(".screen");
 const notice = document.querySelector("#notice");
 const dateInput = document.querySelector("#schedule-date");
 const maintenanceList = document.querySelector("#maintenance-list");
+const resetButton = document.querySelector("#reset-checklist");
 const guideTitle = document.querySelector("#guide-title");
 const guideList = document.querySelector("#guide-list");
 let completedByDate = {};
+const navigationStack = ["home"];
 
 function showNotice(message) {
   notice.textContent = message;
@@ -119,7 +124,14 @@ function loadCompletedItems() {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        completedByDate = parsed;
+        completedByDate = Object.fromEntries(
+          Object.entries(parsed)
+            .filter(([date, items]) => /^\d{4}-\d{2}-\d{2}$/.test(date) && Array.isArray(items))
+            .map(([date, items]) => [
+              date,
+              [...new Set(items.filter((index) => Number.isInteger(index) && index >= 0 && index < maintenanceItems.length))],
+            ]),
+        );
       } else {
         showNotice("저장된 관리 일정 형식을 읽을 수 없습니다.");
       }
@@ -132,8 +144,11 @@ function loadCompletedItems() {
 function saveCompletedItems() {
   try {
     localStorage.setItem(storageKey, JSON.stringify(completedByDate));
+    notice.hidden = true;
+    return true;
   } catch {
     showNotice("체크 상태를 저장하지 못했습니다.");
+    return false;
   }
 }
 
@@ -209,21 +224,60 @@ function showScreen(screenName) {
   });
 }
 
+function navigateToScreen(screenName) {
+  if (navigationStack[navigationStack.length - 1] !== screenName) {
+    navigationStack.push(screenName);
+  }
+  showScreen(screenName);
+}
+
+function navigateBack() {
+  if (navigationStack.length <= 1) {
+    return false;
+  }
+
+  navigationStack.pop();
+  showScreen(navigationStack[navigationStack.length - 1]);
+  return true;
+}
+
 document.addEventListener("click", (event) => {
   const screenButton = event.target.closest("[data-screen]");
   if (screenButton) {
-    showScreen(screenButton.dataset.screen);
+    navigateToScreen(screenButton.dataset.screen);
     return;
   }
 
   const situationButton = event.target.closest("[data-situation]");
   if (situationButton) {
     renderGuide(situationButton.dataset.situation);
-    showScreen("guide");
+    navigateToScreen("guide");
   }
 });
 
 dateInput.addEventListener("change", renderMaintenanceItems);
+
+resetButton.addEventListener("click", () => {
+  if (!completedByDate[dateInput.value]) {
+    showNotice("초기화할 관리 기록이 없습니다.");
+    return;
+  }
+
+  delete completedByDate[dateInput.value];
+  const saved = saveCompletedItems();
+  renderMaintenanceItems();
+  if (saved) {
+    showNotice("선택한 날짜의 관리 기록을 초기화했습니다.");
+  }
+});
+
+if (Capacitor.isNativePlatform()) {
+  App.addListener("backButton", () => {
+    if (!navigateBack()) {
+      App.exitApp();
+    }
+  });
+}
 
 const today = new Date();
 dateInput.value = [

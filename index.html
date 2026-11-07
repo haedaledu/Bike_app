@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#ffffff">
     <title>자전거 관리법</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="app.js" defer></script>
+    <script src="app.js" type="module"></script>
   </head>
   <body>
     <main class="app">
@@ -29,6 +29,7 @@
         <h1 id="schedule-title">날짜별 관리 일정</h1>
         <label class="date-label" for="schedule-date">날짜</label>
         <input id="schedule-date" type="date">
+        <button class="reset-button" id="reset-checklist" type="button">이 날짜 기록 초기화</button>
         <ul class="checklist" id="maintenance-list"></ul>
       </section>
 
