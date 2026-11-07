@@ -1,26 +1,21 @@
 # Bike_app
-모바일 지원 자전거 관리 앱
-https://docs.google.com/document/d/1WQfF7bzj-HXkR1FWrOjQq1YTlucKlkQAd892hSH6NBo/edit?usp=sharing
+네이티브 Android 자전거 관리 앱입니다. 화면은 Android 네이티브 UI(Java)로 구성되며, 체크 기록은 기기에 저장됩니다.
 
-## 웹에서 실행
+## 개발 환경
 
-```sh
-npm install
-npm run dev
-```
+- JDK 21
+- Android SDK Platform 36
+- Android SDK Build Tools 36
 
-터미널에 표시되는 로컬 주소를 브라우저에서 엽니다.
+## 디버그 APK 빌드
 
-## Android 앱 빌드
-
-필요한 도구: Node.js 22 이상, JDK 21, Android Studio 및 Android SDK.
+Android Studio에서 `android` 폴더를 열고 **Build > Build Bundle(s) / APK(s) > Build APK(s)**를 선택하거나, 저장소 루트에서 다음 명령을 실행합니다.
 
 ```sh
-npm install
-npm run android:sync
-npm run android:open
+cd android
+./gradlew assembleDebug
 ```
 
-Android Studio에서 프로젝트를 열고 **Build > Build Bundle(s) / APK(s) > Build APK(s)**를 선택해 디버그 APK를 만들 수 있습니다. 또는 Windows에서는 `cd android` 후 `.\gradlew.bat assembleDebug`를 실행합니다. 생성된 APK는 `android/app/build/outputs/apk/debug/app-debug.apk`에 있습니다.
+Windows에서는 `android` 폴더에서 `.\gradlew.bat assembleDebug`를 실행합니다. APK는 `android/app/build/outputs/apk/debug/app-debug.apk`에 생성됩니다.
 
-Play 스토어 배포에는 디버그 APK 대신 서명된 릴리스 번들(AAB)을 생성해야 합니다.
+Play 스토어 배포에는 서명된 릴리스 번들(AAB)을 사용하세요.
