@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f8f4">
+    <meta name="description" content="날짜별 점검과 상황별 관리 안내로 자전거를 관리하세요.">
+    <title>자전거 관리법</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="icon-bike" viewBox="0 0 108 108">
+        <path d="M31 68m-13 0a13 13 0 1 0 26 0a13 13 0 1 0-26 0M76 68m-13 0a13 13 0 1 0 26 0a13 13 0 1 0-26 0M31 68l17-25 10 25H31m27 0h18L66 45l-18-2m14-1h10m-24 1-5-4"/>
+      </symbol>
+      <symbol id="icon-calendar" viewBox="0 0 24 24">
+        <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18M8 14h1m6 0h1m-8 4h1"/>
+      </symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24">
+        <path d="M12 3 20 6v6c0 4-2.7 7.3-8 10-5.3-2.7-8-6-8-10V6l8-3Zm-4 9 3 3 5-5"/>
+      </symbol>
+      <symbol id="icon-rain" viewBox="0 0 24 24">
+        <path d="M6 14a4 4 0 0 1 0-8c1-3 4-4 7-3 2 1 3 2 3 4 3-.5 6 1 6 4s-2 3-4 3H6Zm1 3-1 3m6-3-1 5m6-5-1 3"/>
+      </symbol>
+      <symbol id="icon-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="5"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>
+      </symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+      <symbol id="icon-back" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6"/></symbol>
+    </svg>
+
+    <div class="app">
+      <header class="toolbar">
+        <a class="brand" href="#home" aria-label="자전거 관리법 홈">
+          <span class="brand-icon"><svg aria-hidden="true"><use href="#icon-bike"></use></svg></span>
+          <span>자전거 관리법</span>
+        </a>
+        <span class="brand-label">BIKE CARE</span>
+      </header>
+
+      <main>
+        <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+
+        <section id="home" class="screen" aria-labelledby="home-title">
+          <div class="hero">
+            <p class="hero-eyebrow">매일의 작은 점검, 더 즐거운 라이딩</p>
+            <h1 id="home-title" tabindex="-1">오늘도 가볍게,<br>안전하게 달려요.</h1>
+            <svg class="hero-bike" aria-hidden="true"><use href="#icon-bike"></use></svg>
+            <p class="hero-note">좋은 라이딩은 작은 관리에서 시작돼요.</p>
+          </div>
+          <h2 class="section-title">나의 자전거 관리</h2>
+          <p class="section-subtitle">필요한 관리 방법을 선택해 주세요.</p>
+          <div class="action-list">
+            <a class="action-card" href="#schedule">
+              <span class="action-icon mint"><svg aria-hidden="true"><use href="#icon-calendar"></use></svg></span>
+              <span class="action-copy"><strong>날짜별 관리 일정</strong><span>8가지 점검을 기록하고 관리해요</span></span>
+              <svg class="chevron" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+            </a>
+            <a class="action-card" href="#situations">
+              <span class="action-icon blue"><svg aria-hidden="true"><use href="#icon-shield"></use></svg></span>
+              <span class="action-copy"><strong>상황별 자전거 관리법</strong><span>라이딩 전후, 상황에 맞는 관리 가이드</span></span>
+              <svg class="chevron" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+            </a>
+          </div>
+          <p class="footer-note">체크 기록은 이 브라우저에 저장됩니다.</p>
+        </section>
+
+        <section id="schedule" class="screen" aria-labelledby="schedule-title" hidden>
+          <a class="back-link" href="#home"><svg aria-hidden="true"><use href="#icon-back"></use></svg><span>홈으로</span></a>
+          <h1 id="schedule-title" class="page-title" tabindex="-1">한 번의 점검,<br>더 안심되는 라이딩.</h1>
+          <p class="section-subtitle">완료한 항목을 체크해 나만의 관리 기록을 남겨요.</p>
+          <label class="date-label" for="schedule-date">점검 날짜</label>
+          <input id="schedule-date" class="date-input" type="date">
+          <div class="progress-card">
+            <p>차근차근, 오늘의 관리</p>
+            <strong id="progress-text" aria-live="polite"></strong>
+            <progress id="progress-bar" max="8" value="0" aria-label="관리 체크리스트 진행률"></progress>
+          </div>
+          <h2 class="section-title checklist-title">관리 체크리스트</h2>
+          <ul id="maintenance-list" class="item-list"></ul>
+          <button id="reset-checklist" class="reset-button" type="button">이 날짜 기록 초기화</button>
+        </section>
+
+        <section id="situations" class="screen" aria-labelledby="situations-title" hidden>
+          <a class="back-link" href="#home"><svg aria-hidden="true"><use href="#icon-back"></use></svg><span>홈으로</span></a>
+          <h1 id="situations-title" class="page-title" tabindex="-1">지금, 어떤 상황인가요?</h1>
+          <p class="section-subtitle">상황에 꼭 맞는 관리 방법을 모았어요.</p>
+          <div class="action-list situation-list">
+            <a class="action-card" href="#guide-rain">
+              <span class="action-icon blue"><svg aria-hidden="true"><use href="#icon-rain"></use></svg></span>
+              <span class="action-copy"><strong>자전거가 비에 젖었어요</strong><span>물기 제거부터 체인 관리까지</span></span>
+              <svg class="chevron" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+            </a>
+            <a class="action-card" href="#guide-before-ride">
+              <span class="action-icon mint"><svg aria-hidden="true"><use href="#icon-sun"></use></svg></span>
+              <span class="action-copy"><strong>라이딩 전이에요</strong><span>출발 전, 안전을 위한 4가지 점검</span></span>
+              <svg class="chevron" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+            </a>
+            <a class="action-card" href="#guide-fall">
+              <span class="action-icon amber"><svg aria-hidden="true"><use href="#icon-shield"></use></svg></span>
+              <span class="action-copy"><strong>자전거가 넘어졌어요</strong><span>충격을 받은 부위를 꼼꼼하게 점검해요</span></span>
+              <svg class="chevron" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+            </a>
+          </div>
+        </section>
+
+        <section id="guide" class="screen" aria-labelledby="guide-title" hidden>
+          <a class="back-link" href="#situations"><svg aria-hidden="true"><use href="#icon-back"></use></svg><span>상황 선택으로</span></a>
+          <div id="guide-summary" class="guide-summary">
+            <svg id="guide-icon" aria-hidden="true"><use href="#icon-rain"></use></svg>
+            <h1 id="guide-title" tabindex="-1"></h1>
+            <p>4가지 점검으로 꼼꼼하게 관리해요.</p>
+          </div>
+          <h2 class="section-title">이렇게 관리해 주세요</h2>
+          <ol id="guide-list" class="item-list guide-list"></ol>
+          <aside class="safety">
+            <strong>안전이 가장 중요해요</strong>
+            <p>손상이나 이상이 발견되면 라이딩을 멈추고 정비 전문가에게 점검을 받으세요.</p>
+          </aside>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
